@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sanubari — Jurnal Harian & Refleksi Diri</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Playfair Display (Serif untuk Judul) & Plus Jakarta Sans (Sans-serif untuk UI) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        serif: ['"Playfair Display"', 'serif'],
+                    },
+                    colors: {
+                        warm: {
+                            50: '#FAF8F5',
+                            100: '#F5ECE3',
+                            200: '#EADBC8',
+                            300: '#DAC0A3',
+                            800: '#3C2A21',
+                            900: '#1A120B',
+                        },
+                        sage: {
+                            100: '#E8EFE9',
+                            500: '#7B9A82',
+                            700: '#4E6C56',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Desain Scrollbar Kustom */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #DAC0A3;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #BFA382;
+        }
+    </style>
+</head>
+<body class="bg-warm-50 text-warm-800 font-sans min-h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <!-- OVERLAY UNTUK MOBILE SIDEBAR -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden transition-opacity duration-300"></div>
+
+    <!-- SIDEBAR (Daftar Entri & Navigasi) -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-80 bg-warm-100 border-r border-warm-200 flex flex-col z-40 transform -translate-x-full md:translate-x-0 md:relative md:flex transition-transform duration-300 ease-in-out">
+        <!-- Logo & Header Sidebar -->
+        <div class="p-6 border-b border-warm-200 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-sage-500 flex items-center justify-center text-white font-serif text-xl shadow-md">
+                    S
+                </div>
+                <div>
+                    <h1 class="font-serif text-xl font-bold tracking-tight text-warm-900">Sanubari</h1>
+                    <p class="text-xs text-warm-800/60 font-medium">Jurnal & Refleksi Diri</p>
+                </div>
+            </div>
+            <!-- Tombol Tutup Sidebar (Mobile) -->
+            <button onclick="toggleMobileSidebar()" class="md:hidden p-2 rounded-lg hover:bg-warm-200 text-warm-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Tombol Tambah Jurnal Baru -->
+        <div class="p-4">
+            <button onclick="createNewEntry()" class="w-full py-3 px-4 bg-sage-700 hover:bg-sage-500 text-white rounded-xl font-medium shadow-md transition-all duration-200 flex items-center justify-center space-x-2 group">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Tulis Jurnal Baru</span>
+            </button>
+        </div>
+
+        <!-- Form Pencarian & Filter -->
+        <div class="px-4 pb-4 space-y-2">
+            <div class="relative">
+                <input type="text" id="searchBar" oninput="filterEntries()" placeholder="Cari jurnal..." class="w-full pl-10 pr-4 py-2 bg-white/80 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition-all">
+                <span class="absolute left-3 top-2.5 text-warm-800/40">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </span>
+            </div>
+            
+            <!-- Quick Filter Mood -->
+            <div class="flex space-x-1 overflow-x-auto pb-1" id="moodFilterContainer">
+                <!-- Diisi dinamis lewat JS -->
+            </div>
+        </div>
+
+        <!-- List Entri Jurnal -->
+        <div class="flex-1 overflow-y-auto px-4 pb-6 space-y-3" id="entriesList">
+            <!-- Diisi dinamis lewat JS -->
+        </div>
+
+        <!-- Footer Sidebar -->
+        <div class="p-4 border-t border-warm-200 bg-warm-100/50 flex items-center justify-between text-xs text-warm-800/60">
+            <span>Dikembangkan dengan ❤️</span>
+            <button onclick="openStatsModal()" class="font-semibold text-sage-700 hover:underline">Lihat Statistik</button>
+        </div>
+    </aside>
+
+    <!-- AREA KONTEN UTAMA -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        <!-- HEADER MOBILE -->
+        <header class="md:hidden bg-warm-100 border-b border-warm-200 px-6 py-4 flex items-center justify-between shrink-0">
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleMobileSidebar()" class="p-2 -ml-2 rounded-lg hover:bg-warm-200 text-warm-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                <h1 class="font-serif text-lg font-bold text-warm-900">Sanubari</h1>
+            </div>
+            <button onclick="openStatsModal()" class="p-2 rounded-lg hover:bg-warm-200 text-sage-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+            </button>
+        </header>
+
+        <!-- AREA KERJA EDITOR & DETAIL -->
+        <section class="flex-1 overflow-y-auto p-6 md:p-12 max-w-4xl mx-auto w-full flex flex-col" id="editorContainer">
+            
+            <!-- Keadaan Kosong (Welcome Screen) -->
+            <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-center space-y-6 py-12">
+                <div class="w-24 h-24 bg-warm-200 rounded-full flex items-center justify-center text-warm-800/40">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                </div>
+                <div class="max-w-md">
+                    <h2 class="font-serif text-2xl font-bold text-warm-900 mb-2">Selamat Datang di Sanubari</h2>
+                    <p class="text-sm text-warm-800/60 leading-relaxed">
+                        Luangkan waktu sejenak hari ini untuk menuangkan pikiran, mengevaluasi perasaan, atau sekadar merayakan kemenangan-kemenangan kecil Anda.
+                    </p>
+                </div>
+                <button onclick="createNewEntry()" class="px-6 py-3 bg-sage-700 hover:bg-sage-500 text-white rounded-xl font-medium shadow-md transition-all duration-200">
+                    Mulai Menulis Jurnal
+                </button>
+            </div>
+
+            <!-- Formulir Jurnal Aktif -->
+            <div id="activeEditor" class="hidden flex-1 flex flex-col space-y-6">
+                
+                <!-- Baris Atas Form: Tanggal & Aksi -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-warm-200 pb-6">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-warm-800/40">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </span>
+                        <input type="date" id="entryDate" class="bg-transparent border-none text-warm-900 font-medium focus:ring-0 text-lg cursor-pointer">
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="deleteActiveEntry()" id="btnDelete" class="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Hapus Jurnal">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                        <button onclick="saveActiveEntry()" class="px-5 py-2.5 bg-sage-700 hover:bg-sage-500 text-white rounded-xl font-medium shadow-md transition-all duration-200 flex items-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                            </svg>
+                            <span>Simpan Jurnal</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Pemilih Suasana Hati (Mood Picker) -->
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-warm-800/60 block">Bagaimana perasaanmu hari ini?</label>
+                    <div class="flex flex-wrap gap-2" id="moodPicker">
+                        <!-- Pilihan Mood diisi dinamis -->
+                    </div>
+                </div>
+
+                <!-- Prompt Menulis (Bantuan Inspirasi) -->
+                <div class="bg-warm-100 border border-warm-200 rounded-xl p-4 flex items-start space-x-3">
+                    <span class="text-sage-700 mt-1 shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                    </span>
+                    <div class="flex-1">
+                        <p class="text-xs font-semibold text-warm-800/50">Butuh inspirasi menulis?</p>
+                        <p id="promptText" class="text-sm font-medium text-warm-900 mt-0.5">Mikirin apa hari ini?</p>
+                    </div>
+                    <button onclick="generateNewPrompt()" class="text-xs text-sage-700 hover:underline font-semibold self-center" title="Ubah Prompt">
+                        Acak Ide
+                    </button>
+                </div>
+
+                <!-- Input Judul -->
+                <div class="space-y-1">
+                    <input type="text" id="entryTitle" placeholder="Judul Jurnal..." class="w-full bg-transparent border-none text-2xl md:text-3xl font-serif font-bold text-warm-900 placeholder-warm-800/30 focus:outline-none focus:ring-0">
+                </div>
+
+                <!-- Input Tag -->
+                <div class="space-y-2">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-warm-800/40 text-sm">#</span>
+                        <input type="text" id="entryTags" placeholder="Tambah tag (pisahkan dengan koma, contoh: gratitude, kerja)" class="w-full bg-transparent border-none text-sm text-warm-800 placeholder-warm-800/40 focus:outline-none focus:ring-0">
+                    </div>
+                </div>
+
+                <!-- Konten Teks Utama (Textarea) -->
+                <div class="flex-1 flex flex-col min-h-[300px]">
+                    <textarea id="entryContent" oninput="updateWordCount()" placeholder="Tuliskan isi pikiranmu di sini secara jujur dan terbuka..." class="w-full flex-1 bg-transparent border-none resize-none focus:outline-none focus:ring-0 text-base md:text-lg text-warm-900 leading-relaxed placeholder-warm-800/30"></textarea>
+                </div>
+
+                <!-- Informasi Karakter / Kata & Indikator Simpan -->
+                <div class="flex items-center justify-between text-xs text-warm-800/50 pt-4 border-t border-warm-200">
+                    <div class="flex space-x-4">
+                        <span id="charCount">Karakter: 0</span>
+                        <span id="wordCount">Kata: 0</span>
+                    </div>
+                    <span id="autoSaveIndicator" class="italic flex items-center space-x-1">
+                        <span>Penyimpanan lokal diaktifkan</span>
+                    </span>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- MODAL STATISTIK & ANALISA -->
+    <div id="statsModal" class="fixed inset-0 z-50 flex items-center justify-center hidden p-4">
+        <div class="fixed inset-0 bg-black/50" onclick="closeStatsModal()"></div>
+        <div class="bg-warm-50 rounded-2xl w-full max-w-lg p-6 relative z-10 border border-warm-200 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <!-- Header Modal -->
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-serif text-2xl font-bold text-warm-900">Analisa Jurnal Anda</h3>
+                <button onclick="closeStatsModal()" class="p-2 rounded-lg hover:bg-warm-200 text-warm-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Grid Metrik Statistik -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-warm-100 rounded-xl p-4 text-center">
+                    <div id="statTotalDays" class="text-2xl font-bold text-sage-700">0</div>
+                    <div class="text-xs text-warm-800/60 mt-1 font-medium">Total Jurnal</div>
+                </div>
+                <div class="bg-warm-100 rounded-xl p-4 text-center">
+                    <div id="statStreak" class="text-2xl font-bold text-sage-700">0 Hari</div>
+                    <div class="text-xs text-warm-800/60 mt-1 font-medium">Streak Menulis</div>
+                </div>
+                <div class="bg-warm-100 rounded-xl p-4 text-center">
+                    <div id="statTotalWords" class="text-2xl font-bold text-sage-700">0</div>
+                    <div class="text-xs text-warm-800/60 mt-1 font-medium">Total Kata</div>
+                </div>
+            </div>
+
+            <!-- Mood Distribution (Visualisasi Bar Sederhana) -->
+            <div class="space-y-4">
+                <h4 class="font-serif text-lg font-bold text-warm-900 border-b border-warm-200 pb-2">Distribusi Suasana Hati</h4>
+                <div id="moodBarsContainer" class="space-y-3">
+                    <!-- Bar Chart Mood Diisi dinamis -->
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-warm-200 flex justify-end">
+                <button onclick="closeStatsModal()" class="px-5 py-2.5 bg-sage-700 text-white rounded-xl font-medium shadow-md">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFIKASI TOAST KUSTOM -->
+    <div id="toastNotification" class="fixed bottom-6 right-6 z-50 bg-warm-900 text-warm-50 px-6 py-3 rounded-xl shadow-2xl flex items-center space-x-3 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300">
+        <span id="toastIcon" class="text-sage-500">
+            <!-- Icon diisi sesuai konteks notifikasi -->
+        </span>
+        <span id="toastText" class="text-sm font-medium">Jurnal berhasil disimpan!</span>
+    </div>
+
+    <!-- LOGIKA JAVASCRIPT UTAMA -->
+    <script>
+        // DATA DASAR & MOOD
+        const MOOD_DATA = {
+            gembira: { icon: '😊', label: 'Gembira', color: 'bg-yellow-100 hover:bg-yellow-200 border-yellow-300 text-yellow-800', barColor: 'bg-yellow-400' },
+            damai: { icon: '😌', label: 'Damai', color: 'bg-green-100 hover:bg-green-200 border-green-300 text-green-800', barColor: 'bg-green-400' },
+            biasa: { icon: '😐', label: 'Biasa Saja', color: 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800', barColor: 'bg-slate-400' },
+            sedih: { icon: '😢', label: 'Sedih', color: 'bg-blue-100 hover:bg-blue-200 border-blue-300 text-blue-800', barColor: 'bg-blue-400' },
+            cemas: { icon: '😰', label: 'Cemas', color: 'bg-purple-100 hover:bg-purple-200 border-purple-300 text-purple-800', barColor: 'bg-purple-400' },
+            produktif: { icon: '💪', label: 'Produktif', color: 'bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-800', barColor: 'bg-amber-500' }
+        };
+
+        // KUMPULAN PROMPT IDE MENULIS
+        const WRITING_PROMPTS = [
+            "Apa satu hal yang membuat Anda tersenyum hari ini?",
+            "Tulis tentang kejadian menantang hari ini dan apa yang dipelajari darinya.",
+            "Untuk hal apa Anda merasa paling bersyukur hari ini?",
+            "Bagaimana kualitas energi Anda hari ini dibandingkan kemarin?",
+            "Deskripsikan perasaan Anda sekarang dalam tiga kata yang mendalam.",
+            "Apa pencapaian terkecil hari ini yang pantas Anda hargai?",
+            "Jika hari ini bisa diulang kembali, bagian mana yang ingin Anda ubah?",
+            "Apa yang saat ini paling menyita ruang pikiran Anda?"
+        ];
+
+        // SEED ENTRI DEFAULT UNTUK PREVIEW AWAL YANG INDAH
+        const DEFAULT_ENTRIES = [
+            {
+                id: '1',
+                title: 'Secangkir Kopi dan Rencana Pagi',
+                date: '2026-05-28',
+                mood: 'damai',
+                tags: 'rutinitas, kesederhanaan',
+                content: 'Pagi ini terasa sangat tenang di Bandung. Udara dingin menyelimuti beranda, ditemani aroma pekat kopi Arabika buatan sendiri. Saya memutuskan untuk mengambil waktu 15 menit tanpa membuka ponsel cerdas, murni hanya mengamati semut berjalan dan mendengarkan kicau burung. Terkadang, kebahagiaan sejati bersembunyi dalam kesunyian mutlak sebelum hari dimulai.'
+            },
+            {
+                id: '2',
+                title: 'Menembus Batas Produktivitas',
+                date: '2026-05-29',
+                mood: 'produktif',
+                tags: 'karier, target',
+                content: 'Akhirnya modul dashboard interaktif untuk aplikasi klien selesai diimplementasikan hari ini! Cukup bangga dengan arsitektur kode yang bersih dan adaptif yang saya bangun. Berhasil melampaui deadline dua hari lebih cepat. Malam ini saya pantas beristirahat dengan tenang tanpa bayang-bayang error.'
+            }
+        ];
+
+        // STATE UTAMA APLIKASI
+        let entries = [...DEFAULT_ENTRIES];
+        let activeEntryId = null;
+        let selectedMoodFilter = null;
+
+        // INISIALISASI SAAT DOM SIAP
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set default tanggal hari ini pada editor
+            document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+            
+            // Bangun Pemilih Mood di Editor
+            buildMoodPicker();
+            
+            // Bangun Quick Filter di Sidebar
+            buildMoodFilter();
+            
+            // Tampilkan Daftar Entri
+            renderEntriesList();
+            
+            // Tampilkan Prompt Acak Pertama
+            generateNewPrompt();
+
+            // Sembunyikan editor di awal (meminta pengguna memilih atau membuat baru)
+            showEmptyState(true);
+        });
+
+        // MANAGEMENT TAMPILAN (MOBILE RESPONSIVE)
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+        
+        document.getElementById('sidebarOverlay').addEventListener('click', toggleMobileSidebar);
+
+        // MEMBANGUN KOMPONEN FILTER MOOD (SIDEBAR)
+        function buildMoodFilter() {
+            const container = document.getElementById('moodFilterContainer');
+            container.innerHTML = `
+                <button onclick="setMoodFilter(null)" id="filter-all" class="px-3 py-1 bg-white text-xs font-semibold rounded-full border border-warm-200 hover:bg-warm-100 transition shadow-sm shrink-0 active-filter">
+                    Semua
+                </button>
+            `;
+            
+            Object.keys(MOOD_DATA).forEach(key => {
+                const data = MOOD_DATA[key];
+                container.innerHTML += `
+                    <button onclick="setMoodFilter('${key}')" id="filter-${key}" class="px-3 py-1 bg-white hover:bg-warm-100 text-xs font-semibold rounded-full border border-warm-200 transition shadow-sm shrink-0 flex items-center space-x-1">
+                        <span>${data.icon}</span>
+                        <span>${data.label}</span>
+                    </button>
+                `;
+            });
+        }
+
+        // SET FILTER MOOD PADA SIDEBAR
+        function setMoodFilter(moodKey) {
+            selectedMoodFilter = moodKey;
+            
+            // Update UI Active State Filter Button
+            document.querySelectorAll('#moodFilterContainer button').forEach(btn => {
+                btn.classList.remove('bg-sage-700', 'text-white', 'active-filter');
+                btn.classList.add('bg-white', 'text-warm-800');
+            });
+
+            const activeBtn = document.getElementById(`filter-${moodKey || 'all'}`);
+            activeBtn.classList.remove('bg-white', 'text-warm-800');
+            activeBtn.classList.add('bg-sage-700', 'text-white', 'active-filter');
+
+            filterEntries();
+        }
+
+        // MEMBANGUN PEMILIH MOOD PADA EDITOR
+        function buildMoodPicker() {
+            const picker = document.getElementById('moodPicker');
+            picker.innerHTML = '';
+            
+            Object.keys(MOOD_DATA).forEach(key => {
+                const mood = MOOD_DATA[key];
+                picker.innerHTML += `
+                    <button type="button" onclick="selectMood('${key}')" id="moodBtn-${key}" class="px-3 py-2 border rounded-xl flex items-center space-x-2 text-sm font-medium transition-all duration-150 ${mood.color}">
+                        <span class="text-lg">${mood.icon}</span>
+                        <span>${mood.label}</span>
+                    </button>
+                `;
+            });
+        }
+
+        // PILIH MOOD PADA EDITOR AKTIF
+        function selectMood(moodKey) {
+            // Hilangkan semua highlight
+            Object.keys(MOOD_DATA).forEach(key => {
+                const btn = document.getElementById(`moodBtn-${key}`);
+                btn.classList.remove('ring-4', 'ring-sage-500/30', 'border-sage-500', 'scale-105');
+            });
+
+            // Beri highlight pada mood terpilih
+            if(moodKey) {
+                const activeBtn = document.getElementById(`moodBtn-${moodKey}`);
+                activeBtn.classList.add('ring-4', 'ring-sage-500/30', 'border-sage-500', 'scale-105');
+                activeBtn.dataset.selected = "true";
+            }
+        }
+
+        function getSelectedMoodFromEditor() {
+            let selected = null;
+            Object.keys(MOOD_DATA).forEach(key => {
+                const btn = document.getElementById(`moodBtn-${key}`);
+                if (btn && btn.classList.contains('border-sage-500')) {
+                    selected = key;
+                }
+            });
+            return selected;
+        }
+
+        // GENERASI PROMPT REFLEKSI BARU
+        function generateNewPrompt() {
+            const randomIndex = Math.floor(Math.random() * WRITING_PROMPTS.length);
+            document.getElementById('promptText').innerText = WRITING_PROMPTS[randomIndex];
+        }
+
+        // RENDERING DAFTAR ENTRI DI SIDEBAR
+        function renderEntriesList(entriesToShow = entries) {
+            const listContainer = document.getElementById('entriesList');
+            listContainer.innerHTML = '';
+
+            if (entriesToShow.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-8 px-4">
+                        <p class="text-sm font-medium text-warm-800/40">Tidak ada jurnal ditemukan</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Urutkan entri berdasarkan tanggal terbaru
+            const sortedEntries = [...entriesToShow].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sortedEntries.forEach(entry => {
+                const moodObj = MOOD_DATA[entry.mood] || { icon: '📝', label: 'Netral' };
+                const formattedDate = formatDateIndonesian(entry.date);
+                const tagList = entry.tags ? entry.tags.split(',').map(t => t.trim()).filter(t => t) : [];
+                
+                // Active State styling
+                const isActive = entry.id === activeEntryId;
+                const activeClasses = isActive 
+                    ? 'bg-white border-sage-500 shadow-md ring-1 ring-sage-500/10' 
+                    : 'bg-white/50 border-warm-200/60 hover:bg-white hover:border-warm-300';
+
+                let tagBadges = tagList.map(tag => `<span class="bg-warm-200/50 text-warm-800/70 px-2 py-0.5 rounded text-[10px] font-medium">#${tag}</span>`).join(' ');
+
+                listContainer.innerHTML += `
+                    <div onclick="openEntry('${entry.id}')" class="p-4 border rounded-xl cursor-pointer transition-all duration-200 ${activeClasses}">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[11px] font-semibold text-warm-800/50">${formattedDate}</span>
+                            <span class="text-sm" title="${moodObj.label}">${moodObj.icon}</span>
+                        </div>
+                        <h4 class="font-serif font-bold text-warm-900 text-sm mb-1 truncate">${entry.title || 'Tanpa Judul'}</h4>
+                        <p class="text-xs text-warm-800/60 line-clamp-2 leading-relaxed mb-2">${entry.content || 'Mulai menulis...'}</p>
+                        <div class="flex flex-wrap gap-1">
+                            ${tagBadges}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // PENCARIAN & FILTER ENTRI
+        function filterEntries() {
+            const query = document.getElementById('searchBar').value.toLowerCase();
+            
+            const filtered = entries.filter(entry => {
+                const matchQuery = 
+                    (entry.title && entry.title.toLowerCase().includes(query)) || 
+                    (entry.content && entry.content.toLowerCase().includes(query)) ||
+                    (entry.tags && entry.tags.toLowerCase().includes(query));
+                
+                const matchMood = selectedMoodFilter ? entry.mood === selectedMoodFilter : true;
+
+                return matchQuery && matchMood;
+            });
+
+            renderEntriesList(filtered);
+        }
+
+        // MEMBUAT JURNAL BARU
+        function createNewEntry() {
+            showEmptyState(false);
+            activeEntryId = 'new-' + Date.now();
+            
+            // Reset Form ke Default
+            document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('entryTitle').value = '';
+            document.getElementById('entryTags').value = '';
+            document.getElementById('entryContent').value = '';
+            
+            selectMood(null);
+            updateWordCount();
+            generateNewPrompt();
+
+            // Sembunyikan tombol hapus karena ini entri baru belum tersimpan
+            document.getElementById('btnDelete').classList.add('invisible');
+
+            // Render ulang list agar status aktif berpindah
+            renderEntriesList();
+
+            // Tutup sidebar di perangkat seluler setelah membuat baru
+            if (window.innerWidth < 768) {
+                toggleMobileSidebar();
+            }
+        }
+
+        // MEMBUKA DETAIL JURNAL LAMA
+        function openEntry(id) {
+            const entry = entries.find(e => e.id === id);
+            if (!entry) return;
+
+            showEmptyState(false);
+            activeEntryId = id;
+
+            // Isi Data Jurnal ke Form Editor
+            document.getElementById('entryDate').value = entry.date;
+            document.getElementById('entryTitle').value = entry.title || '';
+            document.getElementById('entryTags').value = entry.tags || '';
+            document.getElementById('entryContent').value = entry.content || '';
+            
+            selectMood(entry.mood);
+            updateWordCount();
+            
+            // Tampilkan tombol hapus
+            document.getElementById('btnDelete').classList.remove('invisible');
+
+            renderEntriesList();
+
+            // Tutup sidebar di perangkat seluler
+            if (window.innerWidth < 768) {
+                toggleMobileSidebar();
+            }
+        }
+
+        // MENYIMPAN JURNAL AKTIF
+        function saveActiveEntry() {
+            if (!activeEntryId) return;
+
+            const date = document.getElementById('entryDate').value;
+            const title = document.getElementById('entryTitle').value.trim() || 'Jurnal Tanpa Judul';
+            const content = document.getElementById('entryContent').value.trim();
+            const tags = document.getElementById('entryTags').value.trim();
+            const mood = getSelectedMoodFromEditor() || 'biasa';
+
+            if (!content) {
+                showToast("⚠️ Silakan tulis isi pikiran Anda terlebih dahulu.");
+                return;
+            }
+
+            const existingIndex = entries.findIndex(e => e.id === activeEntryId);
+
+            if (existingIndex > -1) {
+                // Update Entri Terdaftar
+                entries[existingIndex] = {
+                    ...entries[existingIndex],
+                    date,
+                    title,
+                    content,
+                    tags,
+                    mood
+                };
+                showToast("✨ Jurnal Anda berhasil diperbarui!");
+            } else {
+                // Simpan Entri Baru
+                const newEntry = {
+                    id: activeEntryId,
+                    date,
+                    title,
+                    content,
+                    tags,
+                    mood
+                };
+                entries.push(newEntry);
+                showToast("📝 Entri Jurnal Baru Berhasil Disimpan!");
+            }
+
+            // Tampilkan tombol hapus setelah entri disimpan pertama kali
+            document.getElementById('btnDelete').classList.remove('invisible');
+            
+            renderEntriesList();
+        }
+
+        // MENGHAPUS JURNAL AKTIF
+        function deleteActiveEntry() {
+            if (!activeEntryId) return;
+
+            // Membuat modal konfirmasi kustom sederhana daripada menggunakan `confirm` browser
+            const confirmDelete = confirm("Apakah Anda yakin ingin menghapus jurnal ini secara permanen?");
+            if (!confirmDelete) return;
+
+            entries = entries.filter(e => e.id !== activeEntryId);
+            activeEntryId = null;
+
+            showToast("🗑️ Jurnal berhasil dihapus.");
+            showEmptyState(true);
+            renderEntriesList();
+        }
+
+        // UPDATE HITUNGAN KATA & KARAKTER
+        function updateWordCount() {
+            const text = document.getElementById('entryContent').value;
+            const cleanText = text.trim();
+            
+            const charCount = text.length;
+            const wordCount = cleanText === '' ? 0 : cleanText.split(/\s+/).length;
+
+            document.getElementById('charCount').innerText = `Karakter: ${charCount}`;
+            document.getElementById('wordCount').innerText = `Kata: ${wordCount}`;
+        }
+
+        // NOTIFIKASI TOAST KUSTOM
+        function showToast(message) {
+            const toast = document.getElementById('toastNotification');
+            const toastText = document.getElementById('toastText');
+            
+            toastText.innerText = message;
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // KONTROL EMPTY STATE / WELCOME SCREEN
+        function showEmptyState(show) {
+            const emptyState = document.getElementById('emptyState');
+            const activeEditor = document.getElementById('activeEditor');
+
+            if (show) {
+                emptyState.classList.remove('hidden');
+                activeEditor.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                activeEditor.classList.remove('hidden');
+            }
+        }
+
+        // FORMAT TANGGAL KE BAHASA INDONESIA YANG INDAH
+        function formatDateIndonesian(dateString) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', options);
+        }
+
+        // MODAL STATISTIK & ANALISA SUASANA HATI
+        function openStatsModal() {
+            calculateStatistics();
+            const modal = document.getElementById('statsModal');
+            modal.classList.remove('hidden');
+        }
+
+        function closeStatsModal() {
+            const modal = document.getElementById('statsModal');
+            modal.classList.add('hidden');
+        }
+
+        // KALKULASI STATISTIK SECARA DINAMIS
+        function calculateStatistics() {
+            const totalDays = entries.length;
+            document.getElementById('statTotalDays').innerText = totalDays;
+
+            // Hitung total kata di seluruh entri
+            let totalWords = 0;
+            entries.forEach(e => {
+                const words = e.content ? e.content.trim().split(/\s+/).filter(w => w).length : 0;
+                totalWords += words;
+            });
+            document.getElementById('statTotalWords').innerText = totalWords;
+
+            // Hitung Streak Menulis Berurutan Sederhana
+            let streak = 0;
+            const uniqueDatesSorted = [...new Set(entries.map(e => e.date))].sort((a,b) => new Date(b) - new Date(a));
+            
+            if (uniqueDatesSorted.length > 0) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+                
+                // Cek apakah ada entri hari ini atau kemarin untuk mulai berhitung
+                if (uniqueDatesSorted[0] === todayStr || uniqueDatesSorted[0] === yesterdayStr) {
+                    streak = 1;
+                    for (let i = 0; i < uniqueDatesSorted.length - 1; i++) {
+                        const date1 = new Date(uniqueDatesSorted[i]);
+                        const date2 = new Date(uniqueDatesSorted[i+1]);
+                        const diffTime = Math.abs(date1 - date2);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays === 1) {
+                            streak++;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+            document.getElementById('statStreak').innerText = `${streak} Hari`;
+
+            // Hitung Distribusi Mood
+            const moodCounts = {};
+            Object.keys(MOOD_DATA).forEach(k => moodCounts[k] = 0);
+            
+            entries.forEach(e => {
+                if (moodCounts[e.mood] !== undefined) {
+                    moodCounts[e.mood]++;
+                }
+            });
+
+            // Bangun Visual Bar Chart Mood
+            const barsContainer = document.getElementById('moodBarsContainer');
+            barsContainer.innerHTML = '';
+
+            const maxCount = Math.max(...Object.values(moodCounts), 1); // Hindari pembagian dengan nol
+
+            Object.keys(MOOD_DATA).forEach(key => {
+                const count = moodCounts[key];
+                const percentage = (count / maxCount) * 100;
+                const moodObj = MOOD_DATA[key];
+
+                barsContainer.innerHTML += `
+                    <div>
+                        <div class="flex justify-between items-center text-xs font-semibold text-warm-800/80 mb-1">
+                            <span class="flex items-center space-x-1.5">
+                                <span>${moodObj.icon}</span>
+                                <span>${moodObj.label}</span>
+                            </span>
+                            <span>${count} entri</span>
+                        </div>
+                        <div class="w-full bg-warm-200 rounded-full h-2.5 overflow-hidden">
+                            <div class="h-full rounded-full ${moodObj.barColor} transition-all duration-500" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
